@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole  @default(USER)
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum UserRole {
+  USER
+  EDITOR
+  ADMIN
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model TravelPackage {
+  id           String         @id @default(cuid())
+  code         String         @unique
+  slug         String         @unique
+  title        String
+  description  String
+  location     String
+  imageUrl     String
+  price        Float
+  startDate    DateTime
+  endDate      DateTime
+  maxGuests    Int
+  dormitories  Int           @default(0)
+  suites       Int           @default(0)
+  bathrooms    Int           @default(0)
+  numberOfDays Int           @default(1)
+  status       PackageStatus @default(DRAFT)
+  contactCount Int           @default(0)
+  typeId       String
+  packageType  PackageType   @relation(fields: [typeId], references: [id])
+  images       PackageImage[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model PackageImage {
+  id        String        @id @default(cuid())
+  url       String
+  isMain    Boolean       @default(false)
+  packageId String
+  package   TravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model PackageType {
+  id          String          @id @default(cuid())
+  name        String
+  description String
+  packages    TravelPackage[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Article {
+  id          String          @id @default(cuid())
+  title       String
+  slug        String          @unique
+  content     String
+  excerpt     String
+  imageUrl    String
+  published   Boolean         @default(false)
+  categoryId  String
+  category    ArticleCategory @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ArticleCategory {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  articles    Article[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SiteSettings {
+  id            String   @id @default("default")
+  name          String
+  description   String
+  logo          String?
+  status        Boolean  @default(true)
+  smtpHost      String?
+  smtpPort      Int?
+  smtpUser      String?
+  smtpPass      String?
+  smtpFrom      String?
+  facebookUrl   String?
+  instagramUrl  String?
+  twitterUrl    String?
+  linkedinUrl   String?
+  youtubeUrl    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum PackageStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  UNAVAILABLE
+}
